@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickopedia</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 900px;
+            background: #f8f9fa;
+            color: #202122;
+        }
+        header {
+            border-bottom: 2px solid #a2a9b1;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 2.2em;
+            margin: 0;
+        }
+        .character-list a {
+            display: block;
+            margin: 5px 0;
+            text-decoration: none;
+            color: #0645ad;
+        }
+        .character-list a:hover {
+            text-decoration: underline;
+        }
+        textarea, input {
+            width: 100%;
+            box-sizing: border-box;
+            margin: 5px 0 15px 0;
+        }
+        button {
+            padding: 10px 15px;
+            background: #3366cc;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #254a99;
+        }
+        .backlink {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Stickopedia</h1>
+        <p>A wiki for the characters of *Adventures of Stick*</p>
+    </header>
+
+    <div id="main"></div>
+
+    <script>
+        const main = document.getElementById('main');
+
+        function saveCharacter(name, content) {
+            localStorage.setItem('stickopedia_' + name, content);
+        }
+
+        function loadCharacter(name) {
+            return localStorage.getItem('stickopedia_' + name);
+        }
+
+        function listCharacters() {
+            let keys = Object.keys(localStorage).filter(k => k.startsWith('stickopedia_'));
+            if (keys.length === 0) {
+                return `<p>No pages yet. Use the form below to add a character!</p>`;
+            }
+            let list = '<div class="character-list">';
+            keys.forEach(k => {
+                const name = k.replace('stickopedia_', '');
+                list += `<a href="#" onclick="viewCharacter('${name}')">${name}</a>`;
+            });
+            list += '</div>';
+            return list;
+        }
+
+        function homePage() {
+            main.innerHTML = `
+                <h2>Character Pages</h2>
+                ${listCharacters()}
+                <hr>
+                <h2>Add New Character</h2>
+                <form onsubmit="event.preventDefault(); createCharacter();">
+                    <label>Character Name:</label>
+                    <input type="text" id="charName" required>
+                    <label>Character Info:</label>
+                    <textarea id="charContent" rows="10" required placeholder="Example:
+First appears in AOS volume 1
+Height: 7'2
+..."></textarea>
+                    <button type="submit">Save Character</button>
+                </form>
+            `;
+        }
+
+        function createCharacter() {
+            const name = document.getElementById('charName').value.trim();
+            const content = document.getElementById('charContent').value.trim();
+            if (!name || !content) return alert('Both fields are required!');
+            saveCharacter(name, content);
+            homePage();
+        }
+
+        function viewCharacter(name) {
+            const content = loadCharacter(name);
+            if (!content) {
+                homePage();
+                return;
+            }
+            const linkedText = content.replace(/([A-Za-z0-9\-]+)/g, function(match) {
+                if (loadCharacter(match)) {
+                    return `<a href="#" onclick="viewCharacter('${match}')">${match}</a>`;
+                }
+                return match;
+            });
+            main.innerHTML = `
+                <h2>${name}</h2>
+                <p>${linkedText.replace(/
+g, '<br>')}</p>
+                <div class="backlink"><a href="#" onclick="homePage()">â Back to Stickopedia</a></div>
+                <h3>Edit This Page</h3>
+                <form onsubmit="event.preventDefault(); saveCharacter('${name}', document.getElementById('editContent').value); viewCharacter('${name}');">
+                    <textarea id="editContent" rows="10">${content}</textarea>
+                    <button type="submit">Save Changes</button>
+                </form>
+            `;
+        }
+
+        homePage();
+    </script>
+</body>
+</html>
